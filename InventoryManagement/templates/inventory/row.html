@@ -16,8 +16,8 @@
 </style>
 <div class="container mt-4">
 
-        <h1>Inventory Layout - {{ inventory.name }} - Row {{ row_id }}</h1>
-        <a href="{% url 'dashboard:dashboard-index' %}" class="btn btn-primary">Back to Overview</a>
+        <span>Inventory Layout - {{ inventory.name }} - Row {{ row_id }}</span>
+        <a href="{% url 'inventory:index' %}" class="btn btn-primary">Back to Overview</a>
 
         <table class="table table-bordered">
             <thead>
@@ -29,7 +29,7 @@
             <tbody>
                 {% for column in columns %}
                 <tr>
-                    <td><a href="{% url 'dashboard:show_column_layout' inventory.id row_id column.column %}">Col {{ column.column }}</a></td>
+                    <td><a href="{% url 'inventory:show_column_layout' inventory.id row_id column.column %}">Col {{ column.column }}</a></td>
                     <td class="{% if column.empty_spaces == 0 %}reserved{% elif column.empty_spaces <= 6 %}partially-filled{% else %}available{% endif %}">
                         {{ column.empty_spaces }} empty spaces
                     </td>

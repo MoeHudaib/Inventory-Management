@@ -17,7 +17,7 @@
 
 <div class="container mt-4">
 
-        <h1>Inventory Layout - {{ inventory.name }} - Row {{ row_id }} - Column {{ column_id }}</h1>
+        <p>Inventory Layout - {{ inventory.name }} - Row {{ row_id }} - Column {{ column_id }}</p>
         <a href="{% url 'inventory:show_inventory_layout' inventory.id row_id %}" class="btn btn-primary">Back to Row</a>
         <a href="{% url 'inventory:index' %}" class="btn btn-primary">Back to Overview</a>
 
@@ -38,5 +38,4 @@
                 {% endfor %}
             </tbody>
         </table>
-
 </div>
