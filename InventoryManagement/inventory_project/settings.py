@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "cart",
     "sales",
     "inventory",
     "user",
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'django.contrib.humanize',
 ]
+CART_SESSION_ID = 'cart'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -62,12 +64,13 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [BASE_DIR / 'templates'], 
         "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'cart.context_processor.cart_total_amount',
             ],
         },
     },
@@ -150,3 +153,11 @@ EMAIL_HOST_USER = 'mohammadhudaib84@gmail.com'
 EMAIL_HOST_PASSWORD = 'mpfm bodu strm dbuy' 
 DEFAULT_FROM_EMAIL = 'mohammadhudaib84@gmail.com'
 ADMIN_EMAIL = 'Mohammadhudaib62@gmail.com'
+
+#RAZORPAY_KEY_ID='rzp_test_90FkFt0la7CHBG'
+#RAZORPAY_KEY_SECRET='rVlmUeUQXe4iDE6aXlTkMNdi'
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

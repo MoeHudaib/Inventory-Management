@@ -8,34 +8,42 @@
         color: #fff;
     }
     .empty {
-        background-color: #007bff; /* Blue */
+        background-color: #fff; /* White for empty layers */
+        color: #000; /* Black text for clarity */
     }
     .partially-filled {
         background-color: #28a745; /* Green */
     }
+    .layer-box {
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 10px;
+        transition: transform 0.2s;
+    }
+    .layer-box:hover {
+        transform: scale(1.05);
+    }
 </style>
 
 <div class="container mt-4">
+    <h4>Inventory Layout - {{ inventory.name }} - Row {{ row_id }} - Column {{ column_id }}</h4>
+    <a href="{% url 'inventory:show_inventory_layout' inventory.id row_id %}" class="btn btn-primary mb-3">Back to Row</a>
+    <a href="{% url 'inventory:index' %}" class="btn btn-primary mb-3">Back to Overview</a>
 
-        <p>Inventory Layout - {{ inventory.name }} - Row {{ row_id }} - Column {{ column_id }}</p>
-        <a href="{% url 'inventory:show_inventory_layout' inventory.id row_id %}" class="btn btn-primary">Back to Row</a>
-        <a href="{% url 'inventory:index' %}" class="btn btn-primary">Back to Overview</a>
-
-
-        <table class="table table-bordered">
-            <tbody>
-                {% for layer in layers %}
-                <tr>
-                    <td class="{% if layer.available_layer == 0 %}reserved{% else %}available{% endif %}">
-                        Layer {{ layer.layer_id }}
-                        {% if layer.stock_id %}
-                            (Stock ID: {{ layer.stock_id }})
-                        {% else %}
-                            <span class="empty">Empty</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="row">
+        {% for layer in layers %}
+        <div class="col-md-3 col-sm-6">
+            <div class="layer-box {% if layer.available_layer == 0 %}reserved{% else %}available{% endif %}">
+                Layer {{ layer.layer_id }}<br>
+                {% if layer.stock_id %}
+                    (Stock ID: {{ layer.stock_id }})
+                {% else %}
+                    <span class="empty">Empty</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>

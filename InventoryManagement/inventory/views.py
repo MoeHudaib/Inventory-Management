@@ -4,7 +4,7 @@ from datetime import date, timedelta, datetime
 from django.contrib.auth.models import User
 from django.db.models import F, Sum
 from .utils import generate_rgba_colors, fetch_top_stocks, prepare_inventory_data, top_10_stocks_chart, generate_charts
-from inventory.models import Category, Stock, ProductColors, InventoryLocation, Inventory
+from inventory.models import Category, Stock, Color, InventoryLocation, Inventory
 from sales.models import Sale
 import json, sys
 from django.contrib import messages
@@ -21,8 +21,7 @@ from django.conf import settings
 # Create a Dashboard View and add Some charts using plotly
 # Recreate A product page For further Analysis
 
-
-@login_required
+@login_required(login_url='user:user-login')
 def index(request):
     now = datetime.now()
     current_year = now.strftime("%Y")
@@ -192,6 +191,7 @@ def report_stock_issue(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'Error sending email: {str(e)}'}, status=500)
 
+
 def about(request):
     context = {
         'page_title':'About',
@@ -199,7 +199,7 @@ def about(request):
     return render(request, 'pos/about.html',context)
 
 #Categories
-@login_required
+@login_required(login_url='user:user-login')
 def category(request):
     category_list = Category.objects.all()
     # category_list = {}
@@ -209,7 +209,7 @@ def category(request):
     }
     return render(request, 'inventory/category.html',context)
 
-@login_required
+@login_required(login_url='user:user-login')
 def manage_category(request):
     category = {}
     if request.method == 'GET':
@@ -225,8 +225,7 @@ def manage_category(request):
     }
     return render(request, 'inventory/manage_category.html',context)
 
-
-@login_required
+@login_required(login_url='user:user-login')
 def save_category(request):
     data =  request.POST
     resp = {'status':'failed'}
@@ -242,7 +241,7 @@ def save_category(request):
         resp['status'] = 'failed'
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
-@login_required
+@login_required(login_url='user:user-login')
 def delete_category(request):
     data =  request.POST
     resp = {'status':''}
@@ -255,7 +254,7 @@ def delete_category(request):
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
 # Products
-@login_required
+@login_required(login_url='user:user-login')
 def product(request):
     product_list = Stock.objects.all()
     context = top_10_stocks_chart()
@@ -263,11 +262,12 @@ def product(request):
     context[ 'products'] =product_list
     return render(request, 'inventory/products.html',context)
 
+@login_required(login_url='user:user-login')
 def prodcut_page(request, pk):
     stock = get_object_or_404(Stock, id=pk)
     in_items = InboundItem.objects.filter(material = stock, active=True)
     out_items = OutboundItem.objects.filter(material = stock)
-    product_colors = ProductColors.objects.all() 
+    product_colors = Color.objects.all() 
     revenue_data = [0] * 12
     sales_frequency_data = [0] * 12
     for item in out_items:
@@ -300,8 +300,6 @@ def manage_product(request):
 
     return render(request, 'inventory/manage_product.html', {'form': form})
 
-
-
 @login_required(login_url='user:user-login')
 def update_product(request , pk):
     stock = get_object_or_404(Stock, id = pk)
@@ -320,6 +318,7 @@ def update_product(request , pk):
         form = UpdateStockForm(instance=stock)
         return render(request, 'inventory/update_product.html',{'form':form, 'stock':stock})
 
+@login_required(login_url='user:user-login')
 def test(request):
     categories = Category.objects.all()
     context = {
@@ -327,7 +326,7 @@ def test(request):
     }
     return render(request, 'inventory/test.html',context)
 
-@login_required
+@login_required(login_url='user:user-login')
 def save_product(request):
     data =  request.POST
     resp = {'status':'failed'}
@@ -354,7 +353,7 @@ def save_product(request):
             resp['status'] = 'failed'
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
-@login_required
+@login_required(login_url='user:user-login')
 def delete_product(request):
     data =  request.POST
     resp = {'status':''}

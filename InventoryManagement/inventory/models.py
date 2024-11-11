@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+import re
+from django.core.exceptions import ValidationError
 
 class Inventory(models.Model):
     name = models.CharField(max_length=255)
@@ -49,9 +51,10 @@ class Stock(models.Model):
         ('kg', 'Kilogram'),
         ('l', 'Liter'),
         ('m', 'Meter'),
+        ('each', 'Each'),
     ]
 
-    vocab_no = models.CharField(max_length=50, unique=True)
+    vocab_no = models.CharField(max_length=50, unique=True, null=True, blank=True)
     name = models.CharField(max_length=255, null=True)
     description1 = models.TextField(null=True)
     description2 = models.TextField(null=True)
@@ -77,10 +80,10 @@ class Stock(models.Model):
             from pos.models import InboundItem  # Avoid circular import
             material_inbounds = InboundItem.objects.filter(material=self)
             self.stocks_on_hand = sum(material.quantity for material in material_inbounds)
-            from e_commerce.models import OrderRequisitionItem  # Avoid circular import
-            material_orders_committed = OrderRequisitionItem.objects.filter(
-                material=self,
-                order_requisition__done=False
+            from e_commerce.models import OrderItem  # Avoid circular import
+            material_orders_committed = OrderItem.objects.filter(
+                product=self,
+                order__done=False
             )
             self.stocks_committed = sum(material.quantity for material in material_orders_committed)
             from pos.models import OutboundItem
@@ -95,17 +98,15 @@ class Stock(models.Model):
     def __str__(self):
         return self.name
 
-import re
-from django.core.exceptions import ValidationError
-
-class ProductColors(models.Model):
-    product = models.ForeignKey(Stock, on_delete=models.CASCADE, related_name='colors')
+class Color(models.Model):
+    product = models.ForeignKey(Stock, models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=200)
     rgb = models.CharField(max_length=7)
 
     class Meta:
         verbose_name = 'Product Color'
         verbose_name_plural = 'Product Colors'
-        unique_together = ('product', 'rgb')
+
 
     def clean(self):
         super().clean()
@@ -113,4 +114,14 @@ class ProductColors(models.Model):
             raise ValidationError('RGB must be in the format #RRGGBB.')
 
     def __str__(self):
-        return f"{self.product.name} - {self.rgb}"
+        return f"{self.name} - {self.rgb}"
+
+class Contact_us(models.Model):
+    name=models.CharField(max_length=100)
+    email=models.EmailField(max_length=100)
+    subject=models.CharField(max_length=100)
+    message=models.TextField()
+    date = models.DateTimeField(auto_now_add=True)    
+
+    def __str__(self):
+         return self.email

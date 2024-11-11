@@ -49,7 +49,7 @@ class InboundItem(models.Model):
 
 # Ignored for now
 class OutboundItem(models.Model):
-    material = models.ForeignKey(Stock, on_delete=models.CASCADE)
+    material = models.ForeignKey(Stock, on_delete=models.CASCADE, null=True, blank=True)
     outbound = models.ForeignKey(Outbound, on_delete=models.CASCADE, related_name='outbounds_items', null=True, blank=True)
     quantity = models.PositiveIntegerField()
     total_price = models.FloatField()

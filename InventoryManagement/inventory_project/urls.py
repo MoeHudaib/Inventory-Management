@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from . import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -25,6 +26,6 @@ urlpatterns = [
     path('',include('user.urls')),
     path('sales/',include('sales.urls')),
     path('pos/',include('pos.urls')),
-    path('e-commrece/',include('e_commerce.urls')),
+    path('e_commerce/',include('e_commerce.urls')),
 
-] 
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

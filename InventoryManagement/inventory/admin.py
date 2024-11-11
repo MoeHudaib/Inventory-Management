@@ -1,10 +1,10 @@
 from django.contrib import admin
-from .models import Stock, Inventory, InventoryLocation, Category, ProductColors
+from .models import Stock, Inventory, InventoryLocation, Category, Color
 
-@admin.register(ProductColors)
 class ProductColorsAdmin(admin.ModelAdmin):
-    list_display = ('product', 'rgb')
-    search_fields = ('product__name', 'rgb')
+    list_display = ['rgb']
+    search_fields = ('name', 'rgb')
+admin.site.register(Color, ProductColorsAdmin)
 admin.site.register(InventoryLocation)
 admin.site.register(Inventory)
 admin.site.register(Category)

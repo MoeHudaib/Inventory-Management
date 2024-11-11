@@ -6,7 +6,7 @@ from django.utils import timezone
 class Sale(models.Model):
     code = models.CharField(max_length=100, null=True)
     user = models.ForeignKey(User, models.CASCADE, null=True, blank=True)
-    order_requisition = models.ForeignKey('e_commerce.OrderRequisition', models.CASCADE, null=True, blank=True)
+    order = models.ForeignKey('e_commerce.Order', models.CASCADE, null=True, blank=True)
     sub_total = models.FloatField(default=0)
     grand_total = models.FloatField(default=0)
     tax_amount = models.FloatField(default=0)
