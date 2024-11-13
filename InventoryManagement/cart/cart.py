@@ -19,39 +19,25 @@ class Cart(object):
         """
         Add a product to the cart or update its quantity.
         """
-        id = product.id
-        newItem = True
-        if str(product.id) not in self.cart.keys():
+        product_id = str(product.id)  # Ensure we use a string as the key
 
-            self.cart[product.id] = {
+        # If the product is not in the cart, add it
+        if product_id not in self.cart:
+            self.cart[product_id] = {
                 'userid': self.request.user.id,
-                'product_id': id,
+                'product_id': product.id,
                 'name': product.name,
-                'quantity': 1,
+                'quantity': quantity,
                 'price': str(product.unit_cost),
-                'image': product.image.url
+                'image': product.image.url,
+                'total': product.unit_cost * quantity
             }
         else:
-            newItem = True
+            # Product is already in the cart, update the quantity
+            self.cart[product_id]['quantity'] += quantity
+            self.cart[product_id]['total'] = self.cart[product_id]['quantity'] * product.unit_cost
 
-            for key, value in self.cart.items():
-                if key == str(product.id):
-
-                    value['quantity'] = value['quantity'] + 1
-                    newItem = False
-                    self.save()
-                    break
-            if newItem == True:
-
-                self.cart[product.id] = {
-                    'userid': self.request,
-                    'product_id': product.id,
-                    'name': product.name,
-                    'quantity': 1,
-                    'price': str(product.unit_cost),
-                    'image': product.image.url
-                }
-
+        # Save the updated cart
         self.save()
 
     def save(self):

@@ -1,13 +1,15 @@
 from django.shortcuts import render,redirect,HttpResponse, get_object_or_404
-from inventory.models import Contact_us, Color, Category, Stock
+from inventory.models import Contact_us, Color, Category, Stock, SHIPPING_FEES, TAX_RATE
 from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from cart.cart import Cart
+from decimal import Decimal
 
 
+# Complete Place order Part To link this app properly to the project
 def ABOUT(request):
     return render(request,'main/about.html')
 
@@ -192,8 +194,11 @@ def Check_out(request):
     if request.method == 'POST':
         pass
     user = request.user
+
     context = {
         'user':user,
+        'shipping_fees':SHIPPING_FEES,
+        'tax_rate':TAX_RATE
     }
     return render(request, 'cart/checkout.html', context)
 
@@ -201,6 +206,39 @@ def Check_out(request):
 @login_required(login_url="e_commerce:login")
 def PLACE_ORDER(request):
     if request.method=="POST":
-       firstname = request.POST.get('firstname')
+        firstname = request.POST.get('firstname')
+        lastname = request.POST.get('lastname')
+        country = request.POST.get('country')
+        address = request.POST.get('address')
+        postcode = request.POST.get('postcode')
+        phone = request.POST.get('phone')
+        email = request.POST.get('email')
 
-    return render(request, 'cart/placeorder.html')
+        if firstname and lastname and country and address and postcode and phone and email :
+            pass
+    cart = Cart(request)  # Instantiate the Cart class
+
+    # Now you have access to the cart data in cart.cart
+    cart_items = cart.cart  # This gives you the items in the cart
+
+    # Calculate the cart total, tax, shipping, etc.
+    cart_total = Decimal('0.00')  # Initialize cart total as a Decimal object
+    for item in cart_items.values():
+        cart_total += Decimal(item['price']) * Decimal(item['quantity'])  # Calculate the total
+
+    # You can also calculate the tax and shipping here
+    shipping_cost = Decimal('7.00')  # Example static shipping cost
+    tax_rate = Decimal('0.0275')  # Example tax rate
+    tax = cart_total * tax_rate
+    total_amount = cart_total + shipping_cost + tax  # Final total
+
+    context = {
+        'cart_items': cart_items,
+        'cart_total': cart_total,
+        'tax': tax,
+        'shipping_cost': shipping_cost,
+        'total_amount': total_amount,
+    }
+        
+
+    return render(request, 'cart/placeorder.html', context)

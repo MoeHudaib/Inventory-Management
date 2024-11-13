@@ -3,6 +3,9 @@ from django.utils import timezone
 import re
 from django.core.exceptions import ValidationError
 
+TAX_RATE = 0.03
+SHIPPING_FEES = 7
+
 class Inventory(models.Model):
     name = models.CharField(max_length=255)
     rows_number = models.IntegerField()

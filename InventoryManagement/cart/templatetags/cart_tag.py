@@ -19,6 +19,6 @@ def add(value, arg):
         return 0  # Return 0 if there is an error in conversion
 
 @register.filter()
-def tax(value, tax_value=2.75):
+def tax(value, tax_value=0.0275):
     """Add tax value to the value."""
-    return float(value) + float(tax_value)
+    return float(value) * float(tax_value)
