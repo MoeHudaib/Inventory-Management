@@ -16,7 +16,7 @@ class Inventory(models.Model):
         verbose_name_plural = "Inventories"
 
     def __str__(self):
-        return self.name
+        return f'{self.name} - {self.id}'
 
 class InventoryLocation(models.Model):
     inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, null=True)
@@ -25,13 +25,19 @@ class InventoryLocation(models.Model):
     layer = models.IntegerField(null=True)
     quantity = models.FloatField(default=0, blank=True, null=True)
     stock = models.ForeignKey('pos.InboundItem', on_delete=models.CASCADE, null=True, blank=True)
-    reserved = models.BooleanField(default=True, null=True)
+    reserved = models.BooleanField( null=True)
 
+    def save(self, *args, **kwargs):
+        if not self.stock:
+            self.reserved = False
+        
+        super().save(*args, **kwargs)
+        
     class Meta:
         unique_together = ('inventory', 'row', 'column', 'layer')
 
     def __str__(self):
-        return f"Row {self.row}, Column {self.column}, Layer {self.layer}"
+        return f"Row {self.row}, Column {self.column}, Layer {self.layer} - {self.inventory.name} - {self.inventory.id} - {self.reserved}"
     
 
 class Category(models.Model):
@@ -46,9 +52,6 @@ class Category(models.Model):
 
     class Meta:
         verbose_name_plural = "Categories"
-
-    def __str__(self):
-        return self.name
 
 class Stock(models.Model):
     UNIT_TYPES = [

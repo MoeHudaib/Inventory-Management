@@ -1,7 +1,7 @@
 # your_app/management/commands/refresh_data.py
 
 from django.core.management.base import BaseCommand
-from inventory.models import Stock
+from inventory.models import Stock, InventoryLocation
 from pos.models import InboundItem
 class Command(BaseCommand):
     help = 'Refresh data in the database'
@@ -18,3 +18,7 @@ class Command(BaseCommand):
             item.save()
         self.stdout.write(self.style.SUCCESS('Successfully refreshed data'))
 
+        locs = InventoryLocation.objects.all()
+        for loc in locs:
+            loc.save()
+        self.stdout.write(self.style.SUCCESS('Successfully refreshed data'))

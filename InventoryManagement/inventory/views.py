@@ -144,11 +144,13 @@ def show_column_layout(request, pk, row_id, column_id):
         location = InventoryLocation.objects.filter(
             inventory=inventory, row=row_id, column=column_id, layer=layer_id, reserved=True
         ).first()
-        stock_id = location.stock.id if location and location.stock else None
+        stock_name = location.stock.material.name if location and location.stock else None
+        stock_q = location.stock.quantity if location and location.stock else None
         layers.append({
             'layer_id': layer_id,
             'available_layer': available_layer,
-            'stock_id': stock_id
+            'stock_id': stock_name,
+            'stock_q': stock_q,
         })
     
     layers = list(reversed(layers))
@@ -161,7 +163,8 @@ def show_column_layout(request, pk, row_id, column_id):
         'row_id': row_id,
         'column_id': column_id,
         'layers': layers,
-        'locations': locations
+        'locations': locations,
+
     })
 
 @login_required(login_url='user:user-login')

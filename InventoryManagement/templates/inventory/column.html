@@ -38,7 +38,7 @@
             <div class="layer-box {% if layer.available_layer == 0 %}reserved{% else %}available{% endif %}">
                 Layer {{ layer.layer_id }}<br>
                 {% if layer.stock_id %}
-                    (Stock ID: {{ layer.stock_id }})
+                    <strong>({{ layer.stock_id }} - {{layer.stock_q}})</strong>
                 {% else %}
                     <span class="empty">Empty</span>
                 {% endif %}

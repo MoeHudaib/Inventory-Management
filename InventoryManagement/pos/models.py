@@ -40,6 +40,7 @@ class InboundItem(models.Model):
         if not self.location:  # If location is not already assigned
             assign_random_location_to_inbound_item(self)  # Assign a random available location with locking
         if self.quantity <= 0:
+            self.location.reserved = False
             self.active = False
         super().save(*args, **kwargs)
 

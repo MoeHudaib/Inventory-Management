@@ -286,7 +286,7 @@ def PLACE_ORDER(request):
                         if item.quantity >= quantity:
                             item.quantity -= quantity
                             print(f"Processed {quantity} from {item.material.name}. Remaining quantity: {item.quantity}")
-                            quantity = 0  # All quantity has been processed
+                            
                             MaterialReport.objects.create(
                                 material = product,
                                 quantity = quantity,
@@ -294,10 +294,18 @@ def PLACE_ORDER(request):
                                 location = item.location,
                                 expiration_date=item.expiration_date,
                                 )
+                            quantity = 0  # All quantity has been processed
                             break
                             
                         else:
                             quantity -= item.quantity
+                            MaterialReport.objects.create(
+                                material = product,
+                                quantity = item.quantity,
+                                order = order,
+                                location = item.location,
+                                expiration_date=item.expiration_date,
+                            )
                             print(f"Processed {item.quantity} from {item.material.name}. Remaining quantity to process: {quantity}")
                             item.quantity = 0  # All of this item is consumed
                     else:

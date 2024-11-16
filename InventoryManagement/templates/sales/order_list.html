@@ -53,9 +53,9 @@
                                         {% endfor %}
                                     </tbody>
                                 </table>
-                                <a href="{% url 'e_commerce:generate_order_pdf' order.id %}" class="print-btn">Print</a>
-                                <a href="{% url 'e_commerce:billing' order.id %}" class="print-btn">print2</a>
-                                <a href="{% url 'sales:order-details' order.id %}" class="print-btn">print2</a>
+                                <a href="{% url 'e_commerce:generate_order_pdf' order.id %}" class="print-btn">admin</a>
+                                <a href="{% url 'e_commerce:billing' order.id %}" class="print-btn">customer</a>
+                                <a href="{% url 'sales:order-details' order.id %}" class="print-btn">i_manager</a>
 
                             </div>
 
