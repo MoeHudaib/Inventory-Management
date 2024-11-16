@@ -1,7 +1,8 @@
-from django.shortcuts import render, HttpResponse, redirect
+from django.shortcuts import render, HttpResponse, redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from .models import Sale, SaleItem
+from .models import Sale, SaleItem, MaterialReport
+from e_commerce.models import Order
 import json, sys
 
 
@@ -68,3 +69,25 @@ def delete_sale(request):
         resp['msg'] = "An error occured"
         print("Unexpected error:", sys.exc_info()[0])
     return HttpResponse(json.dumps(resp), content_type='application/json')
+
+def order_list(request):
+    orders = Order.objects.filter(done = False)
+    context = {
+        'orders':orders,
+    }
+    return render(request, 'sales/order_list.html', context)
+
+def mark_orders_as_seen(request):
+    # Mark all new orders as seen
+    Order.objects.filter(seen_by_user=False).update(seen_by_user=True)
+    
+    return redirect('sales:order-list')
+
+def order_details(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    material_reports = MaterialReport.objects.filter(order= order)
+    context = {
+        'order':order,
+        'material_reports':material_reports,
+    }
+    return render(request, 'sales/order_details.html', context)

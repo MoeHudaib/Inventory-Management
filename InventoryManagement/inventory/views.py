@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
+from e_commerce.models import Order
 
 # To Do List 
 # Separate Manage Category into Create - Update
@@ -54,8 +55,13 @@ def index(request):
     # This will give you a queryset with unique (material name, expiration date) pairs and their total quantities  
 
     # Charts
-    order_labels = ['Order A', 'Order B', 'Order C']
-    order_data = [30, 20, 50]
+    orders = Order.objects.all()
+    order_labels=[]
+    order_data = []
+    for order in orders:
+        order_labels.append(f'ORDER_{order.id}')
+        order_data.append(sum(float(item.quantity) for item in order.orderitem_set.all()))
+    
     products_freq = Stock.objects.all()
     pie_chart_html, bar_chart_html = generate_charts(order_labels, order_data, products_freq)
 

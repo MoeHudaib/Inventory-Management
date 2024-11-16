@@ -2,7 +2,7 @@
 
 from django.core.management.base import BaseCommand
 from inventory.models import Stock
-
+from pos.models import InboundItem
 class Command(BaseCommand):
     help = 'Refresh data in the database'
 
@@ -12,3 +12,9 @@ class Command(BaseCommand):
         for stock in stocks:
             stock.save()  # or update specific fields as necessary
         self.stdout.write(self.style.SUCCESS('Successfully refreshed data'))
+
+        in_items = InboundItem.objects.all()
+        for item in in_items:
+            item.save()
+        self.stdout.write(self.style.SUCCESS('Successfully refreshed data'))
+

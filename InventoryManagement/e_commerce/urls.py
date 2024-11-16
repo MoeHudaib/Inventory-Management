@@ -14,6 +14,10 @@ urlpatterns = [
     path('login/',views.HandleLogin,name='login'),
     path('logout/',views.HandleLogout,name='logout'),
     path('about/',views.ABOUT,name='about'),
+    path('generate_pdf/<int:pk>/', views.generate_order_pdf, name='generate_order_pdf'),
+    path('order-confirmation/<int:pk>/', views.order_confirmation, name='order_confirmation'),
+    path('billing/<int:pk>/', views.billing, name='billing'),
+
 
     #cart
     path('cart/add/<int:id>/', views.cart_add, name='cart_add'),

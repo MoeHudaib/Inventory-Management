@@ -1,6 +1,14 @@
 {% extends 'main/base.html' %}
 {% block content %}
 {% load cart_tag %}
+<div class="card-body">
+    {% for message in messages %}
+    {% if message %}
+    <div class="alert alert-{{ message.tags }}">
+        {{ message }}
+    </div>
+    {% endif %}
+    {% endfor %}
 {% if request.session.cart|length < 1 %}
 
  <!-- Empty Cart area start -->
@@ -156,11 +164,11 @@
                                     <div class="total-shipping">
                                         <h5>Total shipping</h5>
                                         <ul>
-                                            <li>Tax <span>$2.75</span></li>
-                                            <li>shipping charge <span>$7</span></li>
+                                            <li>Tax <span>${{tax_rate|multiply:cart_total_amount}}</span></li>
+                                            <li>shipping charge <span>${{shipping_fees}}</span></li>
                                         </ul>
                                     </div>
-                                    <h4 class="grand-totall-title">Grand Total <span>${{cart_total_amount|add:2.75|add:7}}</span></h4>
+                                    <h4 class="grand-totall-title">Grand Total <span>${{cart_total_amount|tax:tax_rate|add:cart_total_amount|add:shipping_fees}}</span></h4>
                                     
                                     <form method='post' action="{% url 'e_commerce:checkout' %}">
                                         {% csrf_token %}

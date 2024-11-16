@@ -9,6 +9,7 @@ from .models import Outbound, OutboundItem
 from django.utils import timezone
 from .utils import process_outbound,process_inbound 
 from django.http import JsonResponse
+from inventory.models import TAX_RATE
 # To Do List 
 # Work On the Inbound First, To determine a specific quantity for each product 
 # Then recover The reporting system we had in the previous project is_expiring_soon, Low_in_stock

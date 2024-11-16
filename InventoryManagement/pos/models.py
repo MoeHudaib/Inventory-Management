@@ -22,15 +22,23 @@ class Outbound(models.Model):
     date_updated = models.DateTimeField(auto_now=True)
     sale = models.ForeignKey('sales.Sale', on_delete=models.CASCADE, null=True, blank=True)
 
+from django.db import models, transaction
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from e_commerce.utils import assign_random_location_to_inbound_item
+
 class InboundItem(models.Model):
-    material = models.ForeignKey(Stock, on_delete=models.CASCADE)
-    inbound = models.ForeignKey(Inbound, on_delete=models.CASCADE, related_name='inbound_items', null=True, blank=True)
+    material = models.ForeignKey('inventory.Stock', on_delete=models.CASCADE)
+    inbound = models.ForeignKey('Inbound', on_delete=models.CASCADE, related_name='inbound_items', null=True, blank=True)
     quantity = models.PositiveIntegerField()
     expiration_date = models.DateField(null=True)
     date_added = models.DateTimeField(default=timezone.now)
+    location = models.ForeignKey('inventory.InventoryLocation', models.CASCADE, null=True, blank=True)
     active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
+        if not self.location:  # If location is not already assigned
+            assign_random_location_to_inbound_item(self)  # Assign a random available location with locking
         if self.quantity <= 0:
             self.active = False
         super().save(*args, **kwargs)

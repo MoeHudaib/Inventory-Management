@@ -2,6 +2,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing Invoice</title>
+    {%load cart_tag%}
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -94,7 +95,7 @@
     <tbody>
         {% for item in order_items %}
             <tr>
-                <td>{{ item.product }}</td>
+                <td>{{ item.product.name }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.price }}</td>
                 <td>{{ item.total }}</td>
@@ -106,9 +107,9 @@
 
     <div class="billing-summary">
         <div><span>Subtotal:</span><span>${{ order.subtotal }}</span></div>
-        <div><span>Tax (5%):</span><span>${{ order.subtotal|floatformat:2|floatformat:2 }}</span></div>
-        <div class="total"><span>Total:</span><span>${{ order.total }}</span></div>
+        <div><span>Tax (2.75%):</span><span>${{ order.tax|multiply:order.subtotal}}</span></div>
+        <div class="total"><span>Total:</span><span>${{order.total  }}</span></div>
     </div>
 </div>
-
+<br>
 <button class="print-btn" onclick="window.print()">Print Bill</button>

@@ -7,7 +7,10 @@ from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from cart.cart import Cart
 from decimal import Decimal
-
+from e_commerce.models import Order, OrderItem
+from django.contrib import messages 
+from sales.models import MaterialReport
+from pos.models import InboundItem
 
 # Complete Place order Part To link this app properly to the project
 def ABOUT(request):
@@ -149,7 +152,7 @@ def cart_add(request, id):
     cart = Cart(request)
     product = Stock.objects.get(id=id)
     cart.add(product=product)
-    return redirect("e_commerce:home")
+    return redirect("e_commerce:product")
 
 
 @login_required(login_url="e_commerce:login")
@@ -186,8 +189,31 @@ def cart_clear(request):
 
 @login_required(login_url="e_commerce:login")
 def cart_detail(request):
-    return render(request, 'cart/cart_details.html')
+    context = {
+        'user':request.user,
+        'shipping_fees':SHIPPING_FEES,
+        'tax_rate':TAX_RATE
+    }
+    return render(request, 'cart/cart_details.html', context)
 
+def generate_order_pdf(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    pdf = order.generate_pdf()
+    
+    if pdf is None:
+        return HttpResponse("Error generating PDF", status=500)
+    
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="order_requisition_{pk}.pdf"'
+    return response
+
+def order_confirmation(request, pk):
+    order = get_object_or_404(Order, pk = pk)
+
+    context = {
+        'order':order,
+    }
+    return render(request, 'bills/order_confirmation.html', context)
 
 @login_required(login_url="e_commerce:login")
 def Check_out(request):
@@ -202,43 +228,127 @@ def Check_out(request):
     }
     return render(request, 'cart/checkout.html', context)
 
-
 @login_required(login_url="e_commerce:login")
 def PLACE_ORDER(request):
+    
     if request.method=="POST":
-        firstname = request.POST.get('firstname')
-        lastname = request.POST.get('lastname')
-        country = request.POST.get('country')
-        address = request.POST.get('address')
-        postcode = request.POST.get('postcode')
-        phone = request.POST.get('phone')
-        email = request.POST.get('email')
+        # Retrieve the order data from the POST request
+        firstname=request.POST.get('firstname')
+        lastname=request.POST.get('lastname')
+        country=request.POST.get('country')
+        city=request.POST.get('city')
+        address=request.POST.get('address')
+        postcode=request.POST.get('postcode')
+        phone=request.POST.get('phone')
+        email=request.POST.get('email')
+        additional_info=request.POST.get('additional_info')
 
-        if firstname and lastname and country and address and postcode and phone and email :
-            pass
-    cart = Cart(request)  # Instantiate the Cart class
+        # Ensure all required fields are filled
+        if firstname and lastname and country and address and postcode and phone and email:
+            # Create the Order object
+            order = Order(
+                user=request.user,
+                firstname=firstname,
+                lastname=lastname,
+                contry=country,
+                city=city,
+                address=address,
+                postcode=postcode,
+                phone=phone,
+                email=email,
+                additional_info=additional_info,
+            )
+            order.save()  # Save the order to the database
 
-    # Now you have access to the cart data in cart.cart
-    cart_items = cart.cart  # This gives you the items in the cart
+            cart = Cart(request)  # Instantiate the Cart class to access cart items
+            cart_items = cart.cart  # Get the cart items
 
-    # Calculate the cart total, tax, shipping, etc.
-    cart_total = Decimal('0.00')  # Initialize cart total as a Decimal object
-    for item in cart_items.values():
-        cart_total += Decimal(item['price']) * Decimal(item['quantity'])  # Calculate the total
+            # Calculate the cart total, tax, shipping, etc.
+            cart_total = Decimal('0.00')  # Initialize cart total as Decimal
+            for item in cart_items.values():
+                cart_total += Decimal(item['price']) * Decimal(item['quantity'])  # Calculate the item total
+                # Create an OrderItem for each product in the cart
+                product = get_object_or_404(Stock, id=item['product_id'])
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=item['quantity'],
 
-    # You can also calculate the tax and shipping here
-    shipping_cost = Decimal('7.00')  # Example static shipping cost
-    tax_rate = Decimal('0.0275')  # Example tax rate
-    tax = cart_total * tax_rate
-    total_amount = cart_total + shipping_cost + tax  # Final total
+                )
+                quantity = float(item['quantity'])
+                inbound_items = InboundItem.objects.filter(material=product, active = True).order_by('expiration_date')
+                for item in inbound_items:
+                    if item.quantity <= 0:
+                        continue  # Skip items with zero quantity
 
+                    # Process the outbound quantity
+                    if quantity > 0:
+                        if item.quantity >= quantity:
+                            item.quantity -= quantity
+                            print(f"Processed {quantity} from {item.material.name}. Remaining quantity: {item.quantity}")
+                            quantity = 0  # All quantity has been processed
+                            MaterialReport.objects.create(
+                                material = product,
+                                quantity = quantity,
+                                order = order,
+                                location = item.location,
+                                expiration_date=item.expiration_date,
+                                )
+                            break
+                            
+                        else:
+                            quantity -= item.quantity
+                            print(f"Processed {item.quantity} from {item.material.name}. Remaining quantity to process: {quantity}")
+                            item.quantity = 0  # All of this item is consumed
+                    else:
+                        break  # No quantity left to process
+
+                if quantity > 0:
+                    message = f"Not all of the requested quantity for {product.name} could be processed."
+                    print(message)
+
+            # Calculate additional costs (shipping, tax, etc.)
+            tax = float(cart_total) * TAX_RATE
+            total_amount = float(cart_total) + SHIPPING_FEES + tax  # Final total amount including tax and shipping
+
+            # Optionally, you can also update the order with the final amount
+            order.amount = str(total_amount)
+            order.save()  # Save the updated order with the total amount
+
+            # Clear the cart after placing the order
+            cart.clear()
+
+            # Show a success message
+            messages.success(request, 'Your Order Has Been Successfully Created!')
+
+            # Redirect to a confirmation page or render the confirmation page with relevant context
+            context = {
+                'order': order,
+                'cart_total': cart_total,
+                'tax': tax,
+                'shipping_cost': SHIPPING_FEES,
+                'total_amount': total_amount,
+            }
+
+            return render(request, 'cart/placeorder.html', context)
+        else: 
+            messages.warning(request, 'Please fill in all required fields.')
+            return redirect('e_commerce:checkout')
+    
+    # If it's a GET request, render the order page with the initial context
     context = {
-        'cart_items': cart_items,
-        'cart_total': cart_total,
-        'tax': tax,
-        'shipping_cost': shipping_cost,
-        'total_amount': total_amount,
+        'tax': TAX_RATE,
+        'shipping_cost': SHIPPING_FEES,
     }
-        
-
+    
     return render(request, 'cart/placeorder.html', context)
+
+def billing(request, pk):
+    order = get_object_or_404(Order, pk = pk)
+    order_items = OrderItem.objects.filter(order = order)
+    context = {
+        'order':order,
+        'order_items':order_items
+    }
+
+    return render(request, 'cart/Billing.html',context)

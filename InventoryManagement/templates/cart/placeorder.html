@@ -2,7 +2,14 @@
 {% block content %}
 {% load cart_tag %}
 {% if request.session.cart|length < 1 %}
-
+<div class="card-body">
+    {% for message in messages %}
+    {% if message %}
+    <div class="alert alert-{{ message.tags }}">
+        {{ message }}
+    </div>
+    {% endif %}
+    {% endfor %}
  <!-- Empty Cart area start -->
  <div class="empty-cart-area pb-100px pt-100px">
     <div class="container">
@@ -14,7 +21,7 @@
                 <div class="empty-text-contant text-center">
                     <i class="pe-7s-shopbag"></i>
                     <h3>There are no more items in your cart</h3>
-                    <a class="empty-cart-btn" href="{% url 'product' %}">
+                    <a class="empty-cart-btn" href="{% url 'e_commerce:product' %}">
                         <i class="fa fa-arrow-left"> </i> Continue shopping
                     </a>
                 </div>
@@ -31,7 +38,7 @@
         <h3 class="cart-page-title">Your Order</h3>
         <div class="row">
             <div class="col-lg-12 col-md-12 col-sm-12 col-12">
-                <form action="#">
+                <form action="e_commerce:order_confirmation" enctype="multipart/form-data" method="POST">
                     <div class="table-content table-responsive cart-table-content">
                         <table>
                             <thead>
@@ -50,7 +57,7 @@
 
                                 <tr>
                                     <td class="product-thumbnail">
-                                        <a href="#"><img class="img-responsive ml-15px" src="{{value.image}}" alt="" /></a>
+                                        <a href="#"><img class="img-responsive ml-15px" src="{{value.product.image.url}}" alt="" /></a>
                                     </td>
                                     <td class="product-name"><a href="#">{{value.name}}</a></td>
                                     <td class="product-price-cart"><span class="amount">${{value.price}}</span></td>

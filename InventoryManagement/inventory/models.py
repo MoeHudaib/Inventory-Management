@@ -24,7 +24,7 @@ class InventoryLocation(models.Model):
     column = models.IntegerField(null=True)
     layer = models.IntegerField(null=True)
     quantity = models.FloatField(default=0, blank=True, null=True)
-    stock = models.ForeignKey('Stock', on_delete=models.CASCADE, null=True, blank=True)
+    stock = models.ForeignKey('pos.InboundItem', on_delete=models.CASCADE, null=True, blank=True)
     reserved = models.BooleanField(default=True, null=True)
 
     class Meta:
@@ -32,6 +32,7 @@ class InventoryLocation(models.Model):
 
     def __str__(self):
         return f"Row {self.row}, Column {self.column}, Layer {self.layer}"
+    
 
 class Category(models.Model):
     name = models.TextField(null=True, blank=True)
@@ -84,11 +85,11 @@ class Stock(models.Model):
             material_inbounds = InboundItem.objects.filter(material=self)
             self.stocks_on_hand = sum(material.quantity for material in material_inbounds)
             from e_commerce.models import OrderItem  # Avoid circular import
-            material_orders_committed = OrderItem.objects.filter(
+            stock_committed = OrderItem.objects.filter(
                 product=self,
                 order__done=False
             )
-            self.stocks_committed = sum(material.quantity for material in material_orders_committed)
+            self.stocks_committed = sum(int(stock.quantity) for stock in stock_committed)
             from pos.models import OutboundItem
             material_sold_number = OutboundItem.objects.filter(
                 material=self,
