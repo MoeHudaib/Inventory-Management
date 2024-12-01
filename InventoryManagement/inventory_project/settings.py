@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     "user",
     "pos",
     "e_commerce",
-    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,14 +51,6 @@ CART_SESSION_ID = 'cart'
 ASGI_APPLICATION = 'inventory_project.asgi.application'  # Points to the asgi.py in the main project folder
 
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],  # Ensure Redis is running at this address
-        },
-    },
-}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

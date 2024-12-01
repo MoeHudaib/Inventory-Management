@@ -168,7 +168,8 @@
                                             <li>shipping charge <span>${{shipping_fees}}</span></li>
                                         </ul>
                                     </div>
-                                    <h4 class="grand-totall-title">Grand Total <span>${{cart_total_amount|tax:tax_rate|add:cart_total_amount|add:shipping_fees}}</span></h4>
+                                    <h4 class="grand-totall-title">Grand Total <span>${{ cart_total_amount|tax:tax_rate|add:cart_total_amount|add:shipping_fees|floatformat:3 }}
+                                    </span></h4>
                                     
                                     <form method='post' action="{% url 'e_commerce:checkout' %}">
                                         {% csrf_token %}

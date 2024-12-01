@@ -115,7 +115,7 @@ def generate_charts(order_labels, order_data, products):
     pie_chart = px.pie(
         names=order_labels,
         values=order_data,
-        title='Order Requisitions',
+        title='E-Commerce Orders Analysis',
         hover_data={'values': order_data},  # Improved hover data for clarity
     )
     pie_chart.update_traces(textinfo='percent+label')

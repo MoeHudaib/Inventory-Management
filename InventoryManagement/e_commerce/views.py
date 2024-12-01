@@ -149,14 +149,19 @@ def HandleLogout(request):
 
 @login_required(login_url="e_commerce:login")
 def cart_add(request, id):
-    cart = Cart(request)
-    product = Stock.objects.get(id=id)
-    cart.add(product=product)
-    return redirect("e_commerce:product")
+    user = request.user
+    if not user.is_superuser or not user.is_staff:
+        cart = Cart(request)
+        product = Stock.objects.get(id=id)
+        cart.add(product=product)
+        return redirect("e_commerce:product")
+    else:
+        return redirect("inventory:index")
 
 
 @login_required(login_url="e_commerce:login")
 def item_clear(request, id):
+    
     cart = Cart(request)
     product = Stock.objects.get(id=id)
     cart.remove(product)
@@ -228,128 +233,162 @@ def Check_out(request):
     }
     return render(request, 'cart/checkout.html', context)
 
+from django.db import transaction
+
 @login_required(login_url="e_commerce:login")
 def PLACE_ORDER(request):
-    
-    if request.method=="POST":
-        # Retrieve the order data from the POST request
-        firstname=request.POST.get('firstname')
-        lastname=request.POST.get('lastname')
-        country=request.POST.get('country')
-        city=request.POST.get('city')
-        address=request.POST.get('address')
-        postcode=request.POST.get('postcode')
-        phone=request.POST.get('phone')
-        email=request.POST.get('email')
-        additional_info=request.POST.get('additional_info')
+    """Handle the process of placing an order."""
+    if request.method == "POST":
+        # Retrieve order data from the POST request
+        order_data = {
+            'firstname': request.POST.get('firstname'),
+            'lastname': request.POST.get('lastname'),
+            'country': request.POST.get('country'),
+            'city': request.POST.get('city'),
+            'address': request.POST.get('address'),
+            'postcode': request.POST.get('postcode'),
+            'phone': request.POST.get('phone'),
+            'email': request.POST.get('email'),
+            'additional_info': request.POST.get('additional_info')
+        }
 
-        # Ensure all required fields are filled
-        if firstname and lastname and country and address and postcode and phone and email:
-            # Create the Order object
-            order = Order(
-                user=request.user,
-                firstname=firstname,
-                lastname=lastname,
-                contry=country,
-                city=city,
-                address=address,
-                postcode=postcode,
-                phone=phone,
-                email=email,
-                additional_info=additional_info,
-            )
-            order.save()  # Save the order to the database
+        # Validate that all required fields are filled
+        if all(order_data.values()):
+            try:
+                # Start a database transaction to ensure data integrity
+                with transaction.atomic():
+                    # Create the Order object
+                    order = Order(
+                        user=request.user,
+                        firstname=order_data['firstname'],
+                        lastname=order_data['lastname'],
+                        country=order_data['country'],
+                        city=order_data['city'],
+                        address=order_data['address'],
+                        postcode=order_data['postcode'],
+                        phone=order_data['phone'],
+                        email=order_data['email'],
+                        additional_info=order_data['additional_info'],
+                    )
+                    order.save()  # Save the order to the database
 
-            cart = Cart(request)  # Instantiate the Cart class to access cart items
-            cart_items = cart.cart  # Get the cart items
+                    # Process the cart items
+                    cart = Cart(request)
+                    cart_items = cart.cart
+                    cart_total = calculate_cart_total(cart_items)
 
-            # Calculate the cart total, tax, shipping, etc.
-            cart_total = Decimal('0.00')  # Initialize cart total as Decimal
-            for item in cart_items.values():
-                cart_total += Decimal(item['price']) * Decimal(item['quantity'])  # Calculate the item total
-                # Create an OrderItem for each product in the cart
-                product = get_object_or_404(Stock, id=item['product_id'])
-                OrderItem.objects.create(
-                    order=order,
-                    product=product,
-                    quantity=item['quantity'],
+                    # Process each item in the cart and update the stock
+                    for item in cart_items.values():
+                        product = get_object_or_404(Stock, id=item['product_id'])
+                        quantity = float(item['quantity'])
 
-                )
-                quantity = float(item['quantity'])
-                inbound_items = InboundItem.objects.filter(material=product, active = True).order_by('expiration_date')
-                for item in inbound_items:
-                    if item.quantity <= 0:
-                        continue  # Skip items with zero quantity
+                        # Lock the inbound items for this product to prevent concurrent access
+                        inbound_items = InboundItem.objects.filter(
+                            material=product, active=True
+                        ).select_for_update().order_by('expiration_date')
 
-                    # Process the outbound quantity
-                    if quantity > 0:
-                        if item.quantity >= quantity:
-                            item.quantity -= quantity
-                            print(f"Processed {quantity} from {item.material.name}. Remaining quantity: {item.quantity}")
-                            
-                            MaterialReport.objects.create(
-                                material = product,
-                                quantity = quantity,
-                                order = order,
-                                location = item.location,
-                                expiration_date=item.expiration_date,
+                        # If not enough stock available, raise an exception
+                        available_quantity = product.stocks_availability
+                        if available_quantity < quantity:
+                            raise ValueError(f"Not enough stock available for {product.name}.")
+
+                        # Create an OrderItem for the product
+                        OrderItem.objects.create(
+                            order=order,
+                            product=product,
+                            quantity=item['quantity'],
+                        )
+
+                        # Process inbound items and commit stock
+                        remaining_quantity = quantity
+                        for inbound_item in inbound_items:
+                            if remaining_quantity <= 0:
+                                break  # No more quantity to process
+
+                            if inbound_item.quantity >= remaining_quantity:
+                                # Commit this stock to the order
+                                inbound_item.quantity -= remaining_quantity
+                                product.stocks_committed += remaining_quantity
+                                inbound_item.save()
+                                product.save()
+                                # Create MaterialReport to track committed stock
+                                MaterialReport.objects.create(
+                                    material=product,
+                                    quantity=remaining_quantity,
+                                    order=order,
+                                    location=inbound_item.location,
+                                    expiration_date=inbound_item.expiration_date,
                                 )
-                            quantity = 0  # All quantity has been processed
-                            break
-                            
-                        else:
-                            quantity -= item.quantity
-                            MaterialReport.objects.create(
-                                material = product,
-                                quantity = item.quantity,
-                                order = order,
-                                location = item.location,
-                                expiration_date=item.expiration_date,
-                            )
-                            print(f"Processed {item.quantity} from {item.material.name}. Remaining quantity to process: {quantity}")
-                            item.quantity = 0  # All of this item is consumed
-                    else:
-                        break  # No quantity left to process
+                                remaining_quantity = 0  # All quantity has been processed
+                            else:
+                                # Use up all the available stock in this inbound item
+                                remaining_quantity -= inbound_item.quantity
+                                inbound_item.quantity = 0
+                                inbound_item.save()
 
-                if quantity > 0:
-                    message = f"Not all of the requested quantity for {product.name} could be processed."
-                    print(message)
+                                # Create MaterialReport to track the usage
+                                MaterialReport.objects.create(
+                                    material=product,
+                                    quantity=inbound_item.quantity,
+                                    order=order,
+                                    location=inbound_item.location,
+                                    expiration_date=inbound_item.expiration_date,
+                                )
 
-            # Calculate additional costs (shipping, tax, etc.)
-            tax = float(cart_total) * TAX_RATE
-            total_amount = float(cart_total) + SHIPPING_FEES + tax  # Final total amount including tax and shipping
+                        if remaining_quantity > 0:
+                            raise ValueError(f"Not all of the requested quantity for {product.name} could be processed.")
 
-            # Optionally, you can also update the order with the final amount
-            order.amount = str(total_amount)
-            order.save()  # Save the updated order with the total amount
+                    # Calculate tax and total amount
+                    tax = cart_total * TAX_RATE
+                    total_amount = cart_total + SHIPPING_FEES + tax
 
-            # Clear the cart after placing the order
-            cart.clear()
+                    # Update the order with the final amount
+                    order.amount = str(total_amount)
+                    order.save()
 
-            # Show a success message
-            messages.success(request, 'Your Order Has Been Successfully Created!')
+                    # Clear the cart after placing the order
+                    cart.clear()
 
-            # Redirect to a confirmation page or render the confirmation page with relevant context
-            context = {
-                'order': order,
-                'cart_total': cart_total,
-                'tax': tax,
-                'shipping_cost': SHIPPING_FEES,
-                'total_amount': total_amount,
-            }
+                    # Display success message
+                    messages.success(request, 'Your Order Has Been Successfully Created!')
 
-            return render(request, 'cart/placeorder.html', context)
-        else: 
+                    # Provide context for the confirmation page
+                    context = {
+                        'order': order,
+                        'cart_total': cart_total,
+                        'tax': tax,
+                        'shipping_cost': SHIPPING_FEES,
+                        'total_amount': total_amount,
+                    }
+                    return render(request, 'cart/placeorder.html', context)
+
+            except ValueError as e:
+                messages.warning(request, str(e))
+                return redirect('e_commerce:checkout')
+
+            except Exception as e:
+                messages.error(request, "An error occurred while processing your order. Please try again.")
+                return redirect('e_commerce:checkout')
+
+        else:
             messages.warning(request, 'Please fill in all required fields.')
             return redirect('e_commerce:checkout')
-    
-    # If it's a GET request, render the order page with the initial context
+
+    # If GET request, render the order page with the necessary context
     context = {
         'tax': TAX_RATE,
         'shipping_cost': SHIPPING_FEES,
     }
-    
     return render(request, 'cart/placeorder.html', context)
+
+
+def calculate_cart_total(cart_items):
+    """Calculate the total value of items in the cart."""
+    total = Decimal('0.00')
+    for item in cart_items.values():
+        total += Decimal(item['price']) * Decimal(item['quantity'])
+    return total
+
 
 def billing(request, pk):
     order = get_object_or_404(Order, pk = pk)

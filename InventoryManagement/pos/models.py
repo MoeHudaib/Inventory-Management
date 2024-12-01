@@ -28,6 +28,7 @@ from django.core.exceptions import ValidationError
 from e_commerce.utils import assign_random_location_to_inbound_item
 
 class InboundItem(models.Model):
+    inventory = models.ForeignKey('inventory.Inventory', models.CASCADE, null=True, blank=True)
     material = models.ForeignKey('inventory.Stock', on_delete=models.CASCADE)
     inbound = models.ForeignKey('Inbound', on_delete=models.CASCADE, related_name='inbound_items', null=True, blank=True)
     quantity = models.PositiveIntegerField()
@@ -58,6 +59,7 @@ class InboundItem(models.Model):
 
 # Ignored for now
 class OutboundItem(models.Model):
+    inventory = models.ForeignKey('inventory.Inventory', models.CASCADE, null=True, blank=True)
     material = models.ForeignKey(Stock, on_delete=models.CASCADE, null=True, blank=True)
     outbound = models.ForeignKey(Outbound, on_delete=models.CASCADE, related_name='outbounds_items', null=True, blank=True)
     quantity = models.PositiveIntegerField()

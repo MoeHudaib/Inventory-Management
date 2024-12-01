@@ -1,4 +1,6 @@
+
 {% extends "partials/base.html" %} {% load humanize %} {% block pageContent %}
+{% if user.is_authenticated %}
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card">
         <div class="d-flex justify-content-between">
@@ -155,7 +157,6 @@
         </script>
     </div>
 </div>
-<a class="btn btn-success" href="{% url 'inventory:inventory' %}">inventory</a>
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <hr class="w-100">
 </div>
@@ -209,4 +210,5 @@
 </div>
 <!-- Graph Section -->
 {% include 'inventory/charts.html' %}
+{% endif %}
 {% endblock pageContent %}

@@ -29,6 +29,32 @@ def user_profile(request):
 
     return render(request, 'user/profile.html')
 
+from django.shortcuts import redirect
+from django.contrib.auth import authenticate, login
+from django.http import HttpResponseRedirect
+
+def custom_login(request):
+    """Custom login view with role-based redirection."""
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            # Check user roles and redirect accordingly
+            if user.is_superuser:
+                return redirect('inventory:index')  # Admin goes to index
+            elif user.is_staff:
+                return redirect('pos:pos')  # Staff goes to POS
+            else:
+                return redirect('e_commerce:home')  # Customers go to e-commerce page
+        else:
+            # Invalid credentials, show an error or redirect to login page
+            return HttpResponseRedirect('/login/')
+    return render(request, 'login.html')
+
 @login_required(login_url='user:user-login')
 def update_profile(request):
     if request.method == 'POST':
