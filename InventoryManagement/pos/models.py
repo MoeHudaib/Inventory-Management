@@ -28,22 +28,12 @@ from django.core.exceptions import ValidationError
 from e_commerce.utils import assign_random_location_to_inbound_item
 
 class InboundItem(models.Model):
-    inventory = models.ForeignKey('inventory.Inventory', models.CASCADE, null=True, blank=True)
-    material = models.ForeignKey('inventory.Stock', on_delete=models.CASCADE)
-    inbound = models.ForeignKey('Inbound', on_delete=models.CASCADE, related_name='inbound_items', null=True, blank=True)
+    material = models.ForeignKey('inventory.Stock', on_delete=models.CASCADE, null=True, blank=True)
+    inbound = models.ForeignKey(Inbound , on_delete=models.CASCADE, related_name='inbound_items', null=True, blank=True)
     quantity = models.PositiveIntegerField()
-    expiration_date = models.DateField(null=True)
+    expiration_date = models.DateField(null=True, blank=True)
     date_added = models.DateTimeField(default=timezone.now)
-    location = models.ForeignKey('inventory.InventoryLocation', models.CASCADE, null=True, blank=True)
     active = models.BooleanField(default=True)
-
-    def save(self, *args, **kwargs):
-        if not self.location:  # If location is not already assigned
-            assign_random_location_to_inbound_item(self)  # Assign a random available location with locking
-        if self.quantity <= 0:
-            self.location.reserved = False
-            self.active = False
-        super().save(*args, **kwargs)
 
     def clean(self):
         if self.quantity <= 0:

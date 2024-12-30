@@ -27,6 +27,7 @@ class SaleItem(models.Model): #saleItem.item.name
     total = models.FloatField(default=0)
 
 class MaterialReport(models.Model):
+    inbound = models.ForeignKey('pos.Inbound', models.CASCADE, null=True, blank=True)
     material = models.ForeignKey('inventory.Stock', on_delete=models.CASCADE)
     order = models.ForeignKey('e_commerce.Order', on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField()

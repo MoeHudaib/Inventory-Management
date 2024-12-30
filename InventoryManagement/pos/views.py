@@ -10,6 +10,8 @@ from django.utils import timezone
 from .utils import process_outbound,process_inbound 
 from django.http import JsonResponse
 from inventory.models import TAX_RATE
+from django.db import IntegrityError
+
 # To Do List 
 # Work On the Inbound First, To determine a specific quantity for each product 
 # Then recover The reporting system we had in the previous project is_expiring_soon, Low_in_stock
@@ -131,32 +133,56 @@ def generate_unique_code(model, prefix):
         i += 1
 
 
+
 def inbound(request):
     if request.method == 'POST':
-        product_ids = request.POST.getlist('product_id[]')
-        quantities = request.POST.getlist('qty[]')
-        expiration_dates = request.POST.getlist('expiry[]')
-        source = request.POST.get('source')
-        products = []  # List to hold product details for processing
+        try:
+            # Extract product details from the POST request
+            product_ids = request.POST.getlist('product_id[]')
+            quantities = request.POST.getlist('qty[]')
+            expiration_dates = request.POST.getlist('expiry[]')
+            source = request.POST.get('source')
+            
+            if not product_ids or not quantities or not expiration_dates:
+                raise ValueError("Missing product details.")
+            
+            # Prepare products for processing
+            products = [(product_id, qty, expiry) for product_id, qty, expiry in zip(product_ids, quantities, expiration_dates)]
+            
+            # Call the process_inbound function
+            result_message = process_inbound(request.user, products, source)
+            
+            # Display success message
+            messages.success(request, result_message)
+            return redirect('inventory:product')  # Redirect to a different page after success
 
-        for product_id, qty, expiry in zip(product_ids, quantities, expiration_dates):
-            products.append((product_id, qty, expiry))
-        
-        # Call the process_inbound function
-        result_message = process_inbound(request.user, products, source)
-        messages.success(request, result_message)
-        # After processing, render a new context with messages
-        return redirect('inventory:product')
+        except ValueError as e:
+            # Handle invalid data (e.g., missing product details)
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('inventory:inbound')  # Stay on the current page if error occurs
+        except IntegrityError as e:
+            # Handle database errors (e.g., unique constraint violation, foreign key error)
+            messages.error(request, f"Database error: {str(e)}")
+            return redirect('inventory:inbound')
+        except Exception as e:
+            # Catch unexpected errors and inform the user
+            messages.error(request, f"An unexpected error occurred: {str(e)}")
+            return redirect('inventory:inbound')
 
     else:
-        # On GET request, prepare the product list
-        products = Stock.objects.filter(active=True)
-        product_json = [{'id': product.id, 'name': product.name} for product in products]
-        context = {
-            'page_title': "Inbound",
-            'products': products,
-            'product_json': json.dumps(product_json)
-        }
-    
-    return render(request, 'pos/inbound.html', context)
+        # Handle GET requests: prepare product list for the user
+        try:
+            products = Stock.objects.filter(active=True)
+            product_json = [{'id': product.id, 'name': product.name} for product in products]
+            context = {
+                'page_title': "Inbound",
+                'products': products,
+                'product_json': json.dumps(product_json),
+            }
+            return render(request, 'pos/inbound.html', context)
+        except Exception as e:
+            # Handle errors when fetching product data
+            messages.error(request, f"Error loading product list: {str(e)}")
+            return redirect('inventory:product')
+
 

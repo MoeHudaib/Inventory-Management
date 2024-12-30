@@ -17,15 +17,15 @@
                             {% for order in orders %}
                             <div class="card-body">
                                 <table class="table table-striped bg-white">
-                                    <thead class="table-success">
-                                        <tr>
+                                    <thead >
+                                        <tr class="table-success">
                                             <th scope="col"><small>Order ID</small></th>
                                             <th scope="col"><small>Date Created</small></th>
                                             <th scope="col"><small>Taken Date</small></th>
                                             <th scope="col">Status</th>
 
                                         </tr>
-                                        <tr>
+                                        <tr class="table-secondary">
                                             <th scope="col"><small>{{ order.id }}</small></th>
                                             <th scope="col"><small>{{ order.date_created}}</small></th>
                                             <th scope="col"><small>{{ order.delivery_date }}</small></th>
@@ -34,7 +34,7 @@
                                             </span></th>
 
                                         </tr>
-                                        <tr>
+                                        <tr class="table-success">
                                             
                                             <th scope="col">Product</th>
                                             <th scope="col">Category</th>

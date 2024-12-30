@@ -9,6 +9,7 @@
                     <tr>
                         <th class="text-center py-2">Quantity</th>
                         <th class="text-center py-2">Expiry Date</th>
+                        <th class="text-center py-2">Location</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -16,6 +17,7 @@
                     <tr>
                         <td class="text-center align-middle">{{ item.quantity }}</td>
                         <td class="text-center align-middle">{{ item.expiration_date }}</td>
+                        <td class="text-center align-middle">{{ item.material.location }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

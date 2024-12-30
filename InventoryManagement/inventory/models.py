@@ -23,22 +23,17 @@ class InventoryLocation(models.Model):
     row = models.IntegerField(null=True)
     column = models.IntegerField(null=True)
     layer = models.IntegerField(null=True)
-    quantity = models.FloatField(default=0, blank=True, null=True)
-    stock = models.ForeignKey('pos.InboundItem', on_delete=models.CASCADE, null=True, blank=True)
     reserved = models.BooleanField( null=True)
 
-    def save(self, *args, **kwargs):
-        if not self.stock:
-            self.reserved = False
-        
-        super().save(*args, **kwargs)
         
     class Meta:
         unique_together = ('inventory', 'row', 'column', 'layer')
 
     def __str__(self):
-        return f"Row {self.row}, Column {self.column}, Layer {self.layer} - {self.inventory.name} - {self.inventory.id} - {self.reserved}"
-    
+        if self.inventory:
+            return f"Row {self.row}, Column {self.column}, Layer {self.layer} - {self.inventory.name}"
+        else:
+            return "Empty"
 
 class Category(models.Model):
     name = models.TextField(null=True, blank=True)
@@ -78,6 +73,8 @@ class Stock(models.Model):
     sold_number = models.IntegerField(default=0)
     threshold = models.FloatField(default=0)
     active = models.BooleanField(default=True)
+    inventory = models.ForeignKey(Inventory, models.CASCADE, null=True, blank=True)
+    location = models.ForeignKey(InventoryLocation, models.CASCADE, null=True, blank=True)
 
     def is_low_stock(self):
         return self.stocks_availability < self.threshold

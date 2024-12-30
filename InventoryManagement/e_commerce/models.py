@@ -21,7 +21,7 @@ class Order(models.Model):
     phone=models.IntegerField(null=True,blank=True)
     email= models.CharField(max_length=100,null=True,blank=True)
     additional_info=models.TextField(null=True,blank=True)
-    subtotal=models.CharField(max_length=100,null=True,blank=True, editable=False)
+    subtotal=models.CharField(max_length=100,null=True,blank=True)
     tax = models.CharField(max_length=100, default=str(TAX_RATE))
     total = models.FloatField(editable=False, null=True, blank=True)
     date= models.DateField(default=date.today,null=True,blank=True)

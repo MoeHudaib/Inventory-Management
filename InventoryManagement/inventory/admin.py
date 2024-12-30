@@ -38,7 +38,7 @@ class InventoryLocationAdmin(admin.ModelAdmin):
     search_fields = ('inventory__name', 'row', 'column', 'layer')
 
     # Optionally, specify the fields to display in the list view
-    list_display = ('inventory', 'row', 'column', 'layer', 'quantity', 'reserved')
+    list_display = ('inventory', 'row', 'column', 'layer', 'reserved')
 
     # You could also use `list_editable` to allow in-line editing in the list view
     list_editable = ('reserved',)

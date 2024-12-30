@@ -55,3 +55,5 @@ def generate_locations_for_inventory(inventory):
                 locations.append(location)
 
     return locations
+
+

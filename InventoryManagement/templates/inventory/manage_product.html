@@ -102,6 +102,19 @@
                             <div class="invalid-feedback">{{ error }}</div>
                         {% endfor %}
                     </div>
+
+                     <!-- Inventory -->
+                     <div class="mb-3">
+                        <label for="{{ form.inventory.id_for_label }}" class="form-label">inventory</label>
+                        <select id="{{ form.inventory.id_for_label }}" name="{{ form.inventory.html_name }}" class="form-select {% if form.inventory.errors %}is-invalid{% endif %}">
+                            {% for option in form.inventory.field.queryset %}
+                                <option value="{{ option.id }}" {% if option.id == form.inventory.value %}selected{% endif %}>{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                        {% for error in form.inventory.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </form>
             </div>
         </div>

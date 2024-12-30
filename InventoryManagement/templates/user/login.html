@@ -38,7 +38,7 @@
                             <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-4-desktop mdc-layout-grid__cell--span-1-tablet"></div>
                             <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-4-desktop mdc-layout-grid__cell--span-6-tablet">
                                 <div class="mdc-card">
-                                    <form method="post" action="{% url 'user:login' %}">
+                                    <form method="post" action="{% url 'user:user-login' %}">
                                         {% csrf_token %}
                                         <div class="mdc-layout-grid">
                                             <div class="mdc-layout-grid__inner">

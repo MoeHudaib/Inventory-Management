@@ -3,41 +3,79 @@ from sales.models import MaterialReport
 from django.contrib import messages  # Use 'django.contrib.messages' instead of 'flash_messages'
 from django.shortcuts import get_object_or_404
 from inventory.models import Stock
+from django.db import IntegrityError, transaction
+from datetime import date, datetime
+def generate_unique_code(model, prefix):
+    """ Generate a unique code for the given model based on a prefix. """
+    i = 1
+    while True:
+        code = '{:0>5}'.format(i)
+        check = model.objects.filter(code=f"{prefix}{code}").exists()
+        if not check:
+            return f"{prefix}{code}"
+        i += 1
 
 def process_inbound(user, products, source):
-    # Create or update the Inbound object
-    inbound, created = Inbound.objects.update_or_create(
-        responsible_staff=user,
-        source=source,
-    )
+    try:
+        # Start a transaction to ensure atomicity
+        with transaction.atomic():
+            # Create or update the Inbound object
+            inbound, created = Inbound.objects.update_or_create(
+                responsible_staff=user,
+                source=source,
+            )
 
-    for id, qty, exp_date in products:
-        # Create or update the InboundItem
-        InboundItem.objects.update_or_create(
-            inbound=inbound,
-            material_id=id,  # Use material_id if 'id' is the primary key
-            defaults={
-                'quantity': int(qty),
-                'expiration_date': exp_date,
-            }
-        )
-        
-        # Create or update the MaterialReport
-        MaterialReport.objects.update_or_create(
-            inbound=inbound,
-            material_id=id,  # Use material_id if 'id' is the primary key
-            defaults={
-                'quantity': int(qty),
-                'expiration_date': exp_date,
-            }
-        )
-        material = get_object_or_404(Stock, id=id)
-        material.save()
+            for id, qty, exp_date in products:
+                try:
+                    # Ensure quantity is an integer and expiration date is valid
+                    qty = int(qty)
 
+                    # Check if the InboundItem already exists for the same inbound and material
+                    existing_item = InboundItem.objects.filter(inbound=inbound, material_id=id).first()
 
-    # Use messages to provide feedback
-    messages= 'Inbound processed successfully!'
-    return messages
+                    if existing_item:
+                        # If it exists, update the existing item
+                        existing_item.quantity += qty  # You can modify this logic based on your needs
+                        if exp_date:
+                            existing_item.expiration_date = exp_date  # Update expiration date if provided
+                        existing_item.save()  # Save the updated item
+                    else:
+                        # If it doesn't exist, create a new InboundItem
+
+                        InboundItem.objects.create(
+                            inbound=inbound,
+                            material_id=id,
+                            quantity=qty,
+                            expiration_date=exp_date,
+                        )
+
+                    # Create or update the MaterialReport
+                    MaterialReport.objects.update_or_create(
+                        material_id=id,
+                        quantity=qty,
+                        expiration_date=exp_date,
+                    )
+
+                    # Ensure the material exists in Stock before saving
+                    material = get_object_or_404(Stock, id=id)
+                    material.save()
+
+                except IntegrityError as e:
+                    # Handle database integrity errors, like foreign key violations or unique constraint errors
+                    raise IntegrityError(f"Error processing material {id}: {str(e)}")
+                except ValueError as e:
+                    # Handle invalid quantity or expiration date formats
+                    raise ValueError(f"Invalid data for material {id}: {str(e)}")
+
+            return 'Inbound processed successfully!'
+
+    except IntegrityError as e:
+        # Catch errors related to the Inbound object creation/update
+        return f"Error processing inbound: {str(e)}"
+    
+    except Exception as e:
+        # Catch all other exceptions and return a message
+        return f"An unexpected error occurred: {str(e)}"
 
 def process_outbound(product, quantity):
     stock = get_object_or_404(Stock, id=product.id)

@@ -4,7 +4,7 @@ from django.db import connection
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
-
+from django.shortcuts import get_object_or_404
 def generate_rgba_colors(n):
     colors = []
     #random.seed(seed)  # Set the seed for reproducibility
@@ -148,3 +148,49 @@ def generate_charts(order_labels, order_data, products):
     bar_chart_html = pio.to_html(bar_chart, full_html=False)
 
     return pie_chart_html, bar_chart_html
+
+from django.core.exceptions import ValidationError
+from .models import InventoryLocation
+
+
+def create_location_until_available(pk):
+    # Set minimum values for row, column, and layer to 1
+    r_min, cl_min, layer_min = 1, 1, 1
+    inventory = get_object_or_404(Inventory, id=pk)
+
+    # Calculate the maximum possible locations in the inventory
+    max_locations = inventory.rows_number * inventory.columns_number * inventory.layers_number
+
+    # Check if there is enough space for new locations
+    existing_objects_count = InventoryLocation.objects.count()
+    if existing_objects_count >= max_locations:
+        raise ValueError("No more space left to create any location.")  # Raise an error if no space is available
+
+    # Loop to generate locations until an available one is found or all options are exhausted
+    for r in range(r_min, inventory.rows_number + 1):
+        for cl in range(cl_min, inventory.columns_number + 1):
+            for layer in range(layer_min, inventory.layers_number + 1):
+                try:
+                    # Check if the location already exists
+                    location = InventoryLocation.objects.filter(row=r, column=cl, layer=layer, inventory=inventory).first()
+
+                    if location is None:
+                        # If the location doesn't exist, create it with reserved=True
+                        new_location = InventoryLocation(row=r, column=cl, layer=layer, reserved=True, inventory=inventory)
+                        new_location.save()
+                        # Return the new location object as it is available
+                        return new_location
+                    elif location.reserved is False:
+                        # If the location exists and is not reserved, return it as it can be assigned
+                        return location
+                    else:
+                        # If the location is reserved, continue to try other locations
+                        continue
+
+                except Exception as e:
+                    # Handle any exceptions (e.g., database issues)
+                    raise ValueError(f"Error creating location ({r}, {cl}, {layer}): {str(e)}")
+
+    # If no available location is found, raise an error
+    raise ValueError("No available location found.")
+ 

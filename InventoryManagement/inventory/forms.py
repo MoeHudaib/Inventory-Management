@@ -14,6 +14,7 @@ class CreateStockForm(forms.ModelForm):
             'unit_cost',
             'category',
             'image',
+            'inventory',
         ]
         widgets = {
             'description1': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Enter description'}),
@@ -42,8 +43,8 @@ class UpdateStockForm(forms.ModelForm):
         widgets = {
             'description1': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Enter description'}),
             'description2': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Enter additional description'}),
-            'unit_cost': forms.NumberInput(attrs={'step': '0.01', 'placeholder': 'Enter unit cost'}),
-            'threshold': forms.NumberInput(attrs={'step': '0.01', 'placeholder': 'Enter stock threshold'}),
+            'unit_cost': forms.NumberInput(attrs={'step': '0.1', 'placeholder': 'Enter unit cost'}),
+            'threshold': forms.NumberInput(attrs={'step': '0.1', 'placeholder': 'Enter stock threshold'}),
             'source': forms.TextInput(attrs={'placeholder': 'Enter source'}),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
         }

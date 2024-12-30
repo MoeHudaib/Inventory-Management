@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from datetime import date, timedelta, datetime
 from django.contrib.auth.models import User
 from django.db.models import F, Sum
-from .utils import generate_rgba_colors, fetch_top_stocks, prepare_inventory_data, top_10_stocks_chart, generate_charts
+from .utils import generate_rgba_colors, fetch_top_stocks, prepare_inventory_data, top_10_stocks_chart, generate_charts, create_location_until_available
 from inventory.models import Category, Stock, Color, InventoryLocation, Inventory
 from sales.models import Sale
 import json, sys
@@ -265,10 +265,12 @@ def delete_category(request):
 # Products
 @login_required(login_url='user:user-login')
 def product(request):
-    product_list = Stock.objects.all()
+    product_list = Stock.objects.all().order_by('category')
+    categories = Category.objects.all().order_by('name')
     context = top_10_stocks_chart()
     context['page_title'] = 'Product List'
     context[ 'products'] =product_list
+    context['categories'] = categories
     return render(request, 'inventory/products.html',context)
 
 @login_required(login_url='user:user-login')
@@ -293,12 +295,26 @@ def prodcut_page(request, pk):
     }
     return render(request, 'inventory/product_page.html', context)
 
+
+from django.core.exceptions import ValidationError
+
 @login_required(login_url='user:user-login')
 def manage_product(request):
     if request.method == "POST":
         form = CreateStockForm(request.POST, request.FILES)
+        # Handling Stock creation and assignment
         if form.is_valid():
             stock = form.save()
+            try:
+                # Try to assign the location using the available location creation function
+                location = create_location_until_available(stock.inventory.id)
+                stock.location = location
+                stock.save()  # Save the stock with the location
+            except ValueError as e:
+                # If the function fails to assign a location, delete the stock to prevent errors
+                stock.delete()
+                raise ValidationError(str(e))  # Raise a validation error with the error message
+
             stock_name = form.cleaned_data.get('name')
             messages.success(request, f'{stock_name} has been successfully added.')
             return redirect('inventory:product')

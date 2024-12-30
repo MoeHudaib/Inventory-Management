@@ -1,5 +1,6 @@
 {% extends "partials/base.html" %} 
 {% block pageContent %}
+<!-- Page Header -->
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card py-2">
         <div class="d-flex justify-content-between align-items-center">
@@ -12,10 +13,23 @@
         </div>
     </div>
 </div>
+
+<!-- Category Name Filter -->
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
+    <div class="mdc-card py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="filterCategoryName" placeholder="Search by Category Name">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Table -->
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card">
         <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered">
+            <table class="table table-hover table-striped table-bordered" id="categoryTable">
                 <thead class="table-dark">
                     <tr>
                         <th class="text-center py-2">#</th>
@@ -53,21 +67,40 @@
         </div>
     </div>
 </div>
-{% endblock pageContent %} 
+{% endblock pageContent %}
 
 {% block ScriptBlock %}
 <script>
     $(function() {
+        // Filter by Category Name
+        $('#filterCategoryName').on('input', function() {
+            var searchValue = $(this).val().toLowerCase();
+            $('#categoryTable tbody tr').each(function() {
+                var row = $(this);
+                var categoryName = row.find('td').eq(1).text().toLowerCase();
+                if (categoryName.includes(searchValue)) {
+                    row.show();
+                } else {
+                    row.hide();
+                }
+            });
+        });
+
+        // Add New Category
         $('#create_new').click(function() {
             uni_modal("Add New Category", "{% url 'inventory:manage-category' %}")
-        })
+        });
+
+        // Edit Category
         $('.edit-data').click(function() {
             uni_modal("Edit Category", "{% url 'inventory:manage-category' %}?id=" + $(this).attr('data-id'))
-        })
+        });
+
+        // Delete Category
         $('.delete-data').click(function() {
             _conf("Are you sure to delete this Category?", "delete_category", [$(this).attr('data-id')])
-        })
-    })
+        });
+    });
 
     function delete_category($id) {
         start_loader();
